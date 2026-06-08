@@ -1,5 +1,7 @@
 """CLI integration tests using Click's CliRunner and a temporary database."""
 
+from datetime import date
+
 import pytest
 from click.testing import CliRunner
 
@@ -8,67 +10,90 @@ from jobs.cli import cli
 
 @pytest.fixture
 def runner(tmp_path, monkeypatch):
-    """Return a CliRunner and point DB_PATH at a fresh temp database."""
-    db_path = str(tmp_path / "test_jobs.db")
-    monkeypatch.setenv("DB_PATH", db_path)
+    """Return a CliRunner pointed at a fresh temp database."""
+    monkeypatch.setenv("DB_PATH", str(tmp_path / "test_jobs.db"))
     return CliRunner()
 
 
-def test_add_creates_application(runner):
-    """`jobs add` with valid interactive input should print the confirmation line."""
-    ...
+def _add(runner, company="Acme", role="Engineer", date_applied="2026-06-01",
+         status="applied", notes=""):
+    """Helper: invoke `jobs add` with pre-set answers."""
+    return runner.invoke(
+        cli, ["add"],
+        input=f"{company}\n{role}\n{date_applied}\n{status}\n{notes}\n",
+    )
 
 
-def test_list_empty(runner):
-    """`jobs list` with no data should print 'No applications found.'"""
-    ...
+# --- jobs add ---
+
+def test_add_confirmation_message(runner):
+    result = _add(runner, company="Anthropic", role="Software Engineer",
+                  date_applied="2026-06-08", status="applied", notes="referral")
+    assert result.exit_code == 0
+    assert "Added application #1" in result.output
+    assert "Anthropic" in result.output
+    assert "Software Engineer" in result.output
+    assert "applied" in result.output
 
 
-def test_list_shows_added_application(runner):
-    """`jobs list` should display an application that was added via `jobs add`."""
-    ...
+def test_add_persists_to_db(runner, tmp_path, monkeypatch):
+    from jobs import db
+    db_path = tmp_path / "test_jobs.db"
+    monkeypatch.setenv("DB_PATH", str(db_path))
+    runner2 = CliRunner()
+    _add(runner2, company="Globex", role="Dev", date_applied="2026-06-01")
+    rows = db.list_applications(path=db_path)
+    assert len(rows) == 1
+    assert rows[0]["company"] == "Globex"
 
 
-def test_list_filter_by_status(runner):
-    """`jobs list --status interview` should only show matching applications."""
-    ...
+def test_add_default_status_is_applied(runner):
+    # Hit enter to accept the "applied" default for status
+    result = runner.invoke(cli, ["add"], input="Corp\nDev\n2026-06-01\n\n\n")
+    assert result.exit_code == 0
+    assert "applied" in result.output
 
 
-def test_show_existing(runner):
-    """`jobs show <id>` should print all fields for a known application."""
-    ...
+def test_add_default_date_is_today(runner):
+    today = date.today().isoformat()
+    result = runner.invoke(cli, ["add"], input="Corp\nDev\n\napplied\n\n")
+    assert result.exit_code == 0
+    assert today in result.output
 
 
-def test_show_unknown_id(runner):
-    """`jobs show <id>` with an unknown id should print an error message."""
-    ...
+def test_add_empty_notes_accepted(runner):
+    result = _add(runner, notes="")
+    assert result.exit_code == 0
 
 
-def test_update_status(runner):
-    """`jobs update <id> --status interview` should update and confirm the change."""
-    ...
+def test_add_invalid_status_prints_error(runner):
+    result = runner.invoke(cli, ["add"], input="Corp\nDev\n2026-06-01\nbogus\n\n")
+    assert result.exit_code != 0
+    assert "Invalid status 'bogus'" in result.output
+    assert "applied" in result.output  # valid options listed
 
 
-def test_update_unknown_id(runner):
-    """`jobs update <id>` with an unknown id should print an error message."""
-    ...
+def test_add_status_is_case_insensitive(runner):
+    result = _add(runner, status="INTERVIEW")
+    assert result.exit_code == 0
+    assert "interview" in result.output
 
 
-def test_delete_confirmed(runner):
-    """Confirming `jobs delete <id>` should remove the record."""
-    ...
+def test_add_second_application_gets_next_id(runner):
+    _add(runner)
+    result = _add(runner)
+    assert "Added application #2" in result.output
 
 
-def test_delete_aborted(runner):
-    """Declining `jobs delete <id>` should leave the record intact."""
-    ...
+# --- stubs for commands not yet implemented ---
 
-
-def test_delete_unknown_id(runner):
-    """`jobs delete <id>` with an unknown id should print an error message."""
-    ...
-
-
-def test_add_invalid_status(runner):
-    """Providing an invalid status during `jobs add` should print an error."""
-    ...
+def test_list_empty(runner): ...
+def test_list_shows_added_application(runner): ...
+def test_list_filter_by_status(runner): ...
+def test_show_existing(runner): ...
+def test_show_unknown_id(runner): ...
+def test_update_status(runner): ...
+def test_update_unknown_id(runner): ...
+def test_delete_confirmed(runner): ...
+def test_delete_aborted(runner): ...
+def test_delete_unknown_id(runner): ...
