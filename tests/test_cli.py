@@ -197,8 +197,77 @@ def test_show_unknown_id_after_add(runner):
     result = runner.invoke(cli, ["show", "99"])
     assert result.exit_code != 0
     assert "No application found with ID 99" in result.output
-def test_update_status(runner): ...
-def test_update_unknown_id(runner): ...
+
+# --- jobs update ---
+
+def test_update_status_changes_status(runner):
+    _add(runner, company="Anthropic", role="SWE", status="applied")
+    result = runner.invoke(cli, ["update", "1", "--status", "interview"])
+    assert result.exit_code == 0
+    assert "Updated application #1" in result.output
+    assert "Anthropic" in result.output
+    assert "SWE" in result.output
+    assert "interview" in result.output
+
+
+def test_update_notes_replaces_notes(runner):
+    _add(runner, notes="old note")
+    result = runner.invoke(cli, ["update", "1", "--notes", "new note"])
+    assert result.exit_code == 0
+    # verify the change was persisted
+    show = runner.invoke(cli, ["show", "1"])
+    assert "new note" in show.output
+    assert "old note" not in show.output
+
+
+def test_update_both_options_at_once(runner):
+    _add(runner, status="applied", notes="first")
+    result = runner.invoke(cli, ["update", "1", "--status", "offer", "--notes", "second"])
+    assert result.exit_code == 0
+    show = runner.invoke(cli, ["show", "1"])
+    assert "offer" in show.output
+    assert "second" in show.output
+
+
+def test_update_status_is_case_insensitive(runner):
+    _add(runner, status="applied")
+    result = runner.invoke(cli, ["update", "1", "--status", "INTERVIEW"])
+    assert result.exit_code == 0
+    assert "interview" in result.output
+
+
+def test_update_no_options_is_noop(runner):
+    _add(runner, company="Corp", status="applied")
+    result = runner.invoke(cli, ["update", "1"])
+    assert result.exit_code == 0
+    assert "Corp" in result.output
+    assert "applied" in result.output
+
+
+def test_update_invalid_status_prints_error(runner):
+    _add(runner)
+    result = runner.invoke(cli, ["update", "1", "--status", "promoted"])
+    assert result.exit_code != 0
+    assert "Invalid status 'promoted'" in result.output
+    assert "applied" in result.output  # valid options listed
+
+
+def test_update_unknown_id_prints_error(runner):
+    result = runner.invoke(cli, ["update", "999", "--status", "offer"])
+    assert result.exit_code != 0
+    assert "No application found with ID 999" in result.output
+
+
+def test_update_does_not_affect_other_rows(runner):
+    _add(runner, company="Alpha", status="applied")
+    _add(runner, company="Beta", status="applied")
+    runner.invoke(cli, ["update", "1", "--status", "offer"])
+    show = runner.invoke(cli, ["show", "2"])
+    assert "applied" in show.output
+
+
+# --- stubs for commands not yet implemented ---
+
 def test_delete_confirmed(runner): ...
 def test_delete_aborted(runner): ...
 def test_delete_unknown_id(runner): ...

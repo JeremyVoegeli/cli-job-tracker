@@ -58,7 +58,17 @@ def show(id: int) -> None:
 @click.option("--notes", default=None, help="Replace notes content.")
 def update(id: int, status: str | None, notes: str | None) -> None:
     """Update the status and/or notes on an existing application."""
-    ...
+    if status is not None:
+        status = status.strip().lower()
+        if status not in db.VALID_STATUSES:
+            valid = ", ".join(sorted(db.VALID_STATUSES))
+            click.echo(f"Invalid status '{status}'. Valid options: {valid}")
+            sys.exit(1)
+    row = db.update_application(id, status=status, notes=notes)
+    if row is None:
+        click.echo(f"No application found with ID {id}.")
+        sys.exit(1)
+    click.echo(f"Updated application #{row['id']} — {row['company']}, {row['role']} ({row['status']})")
 
 
 @cli.command()
