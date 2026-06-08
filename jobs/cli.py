@@ -75,4 +75,12 @@ def update(id: int, status: str | None, notes: str | None) -> None:
 @click.argument("id", type=int)
 def delete(id: int) -> None:
     """Delete an application by ID after prompting for confirmation."""
-    ...
+    row = db.get_application(id)
+    if row is None:
+        click.echo(f"No application found with ID {id}.")
+        sys.exit(1)
+    confirmed = click.confirm(f"Delete {row['company']} — {row['role']}?", default=False)
+    if not confirmed:
+        return
+    db.delete_application(id)
+    click.echo(f"Deleted application #{id}.")

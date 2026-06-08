@@ -266,8 +266,47 @@ def test_update_does_not_affect_other_rows(runner):
     assert "applied" in show.output
 
 
-# --- stubs for commands not yet implemented ---
+# --- jobs delete ---
 
-def test_delete_confirmed(runner): ...
-def test_delete_aborted(runner): ...
-def test_delete_unknown_id(runner): ...
+def test_delete_confirmed_removes_application(runner):
+    _add(runner, company="Anthropic", role="Software Engineer")
+    result = runner.invoke(cli, ["delete", "1"], input="y\n")
+    assert result.exit_code == 0
+    assert "Deleted application #1." in result.output
+
+
+def test_delete_confirmation_prompt_shows_company_and_role(runner):
+    _add(runner, company="Acme Corp", role="Backend Engineer")
+    result = runner.invoke(cli, ["delete", "1"], input="y\n")
+    assert "Acme Corp" in result.output
+    assert "Backend Engineer" in result.output
+
+
+def test_delete_aborted_leaves_application_intact(runner):
+    _add(runner, company="Globex", role="Dev")
+    result = runner.invoke(cli, ["delete", "1"], input="N\n")
+    assert result.exit_code == 0
+    assert "Deleted" not in result.output
+    show = runner.invoke(cli, ["show", "1"])
+    assert "Globex" in show.output
+
+
+def test_delete_default_answer_is_no(runner):
+    _add(runner)
+    result = runner.invoke(cli, ["delete", "1"], input="\n")
+    assert result.exit_code == 0
+    assert "Deleted" not in result.output
+
+
+def test_delete_unknown_id_prints_error(runner):
+    result = runner.invoke(cli, ["delete", "999"], input="y\n")
+    assert result.exit_code != 0
+    assert "No application found with ID 999" in result.output
+
+
+def test_delete_does_not_affect_other_rows(runner):
+    _add(runner, company="Alpha")
+    _add(runner, company="Beta")
+    runner.invoke(cli, ["delete", "1"], input="y\n")
+    show = runner.invoke(cli, ["show", "2"])
+    assert "Beta" in show.output
