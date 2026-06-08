@@ -156,10 +156,47 @@ def test_list_filter_is_case_insensitive(runner):
     assert "Corp" in result.output
 
 
-# --- stubs for commands not yet implemented ---
+# --- jobs show ---
 
-def test_show_existing(runner): ...
-def test_show_unknown_id(runner): ...
+def test_show_prints_all_fields(runner):
+    _add(runner, company="Anthropic", role="Software Engineer",
+         date_applied="2026-06-08", status="applied", notes="referral")
+    result = runner.invoke(cli, ["show", "1"])
+    assert result.exit_code == 0
+    assert "Anthropic" in result.output
+    assert "Software Engineer" in result.output
+    assert "applied" in result.output
+    assert "2026-06-08" in result.output
+    assert "referral" in result.output
+    assert "Created" in result.output
+    assert "Updated" in result.output
+
+
+def test_show_labels_present(runner):
+    _add(runner)
+    result = runner.invoke(cli, ["show", "1"])
+    for label in ("ID:", "Company:", "Role:", "Status:", "Date Applied:", "Notes:", "Created:", "Updated:"):
+        assert label in result.output
+
+
+def test_show_empty_notes_does_not_error(runner):
+    _add(runner, notes="")
+    result = runner.invoke(cli, ["show", "1"])
+    assert result.exit_code == 0
+    assert "Notes:" in result.output
+
+
+def test_show_unknown_id_prints_error(runner):
+    result = runner.invoke(cli, ["show", "999"])
+    assert result.exit_code != 0
+    assert "No application found with ID 999" in result.output
+
+
+def test_show_unknown_id_after_add(runner):
+    _add(runner)
+    result = runner.invoke(cli, ["show", "99"])
+    assert result.exit_code != 0
+    assert "No application found with ID 99" in result.output
 def test_update_status(runner): ...
 def test_update_unknown_id(runner): ...
 def test_delete_confirmed(runner): ...
