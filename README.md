@@ -4,7 +4,7 @@ A command-line tool for tracking job applications during a job search. Applicati
 
 ## Tech Stack
 
-- **Python 3.10+**
+- **Python 3.9+**
 - **[Click](https://click.palletsprojects.com/)** — CLI framework
 - **SQLite** (`sqlite3` stdlib) — local database
 - **pytest** — test suite
@@ -17,16 +17,16 @@ cd cli-job-tracker
 pip install -e .
 ```
 
-This registers the `jobs` command globally in your environment.
+This registers the `jobtracker` command globally in your environment.
 
 ## Usage
 
-### `jobs add`
+### `jobtracker add`
 
 Interactively add a new job application. Company and role are required; all other fields have defaults.
 
 ```
-$ jobs add
+$ jobtracker add
 Company: Anthropic
 Role: Software Engineer
 Date applied [2026-06-08]:
@@ -39,12 +39,12 @@ Valid status values: `applied`, `interview`, `offer`, `rejected`, `withdrawn`
 
 ---
 
-### `jobs list`
+### `jobtracker list`
 
 List all applications in a table, sorted by date applied (newest first).
 
 ```
-$ jobs list
+$ jobtracker list
 ID  Company       Role                  Status      Date Applied
 --  -----------   -------------------   ---------   ------------
 4   Anthropic     Software Engineer     applied     2026-06-08
@@ -56,7 +56,7 @@ ID  Company       Role                  Status      Date Applied
 Use `--status` to filter by status:
 
 ```
-$ jobs list --status interview
+$ jobtracker list --status interview
 ID  Company       Role                  Status      Date Applied
 --  -----------   -------------------   ---------   ------------
 3   Acme Corp     Backend Engineer      interview   2026-06-01
@@ -64,12 +64,12 @@ ID  Company       Role                  Status      Date Applied
 
 ---
 
-### `jobs show <id>`
+### `jobtracker show <id>`
 
 Show full details for a single application, including notes and timestamps.
 
 ```
-$ jobs show 3
+$ jobtracker show 3
 ID:           3
 Company:      Acme Corp
 Role:         Backend Engineer
@@ -82,12 +82,12 @@ Updated:      2026-06-03 14:22:00
 
 ---
 
-### `jobs update <id>`
+### `jobtracker update <id>`
 
 Update the status and/or notes on an existing application.
 
 ```
-$ jobs update 3 --status offer --notes "Verbal offer received"
+$ jobtracker update 3 --status offer --notes "Verbal offer received"
 Updated application #3 — Acme Corp, Backend Engineer (offer)
 ```
 
@@ -97,12 +97,12 @@ Options:
 
 ---
 
-### `jobs delete <id>`
+### `jobtracker delete <id>`
 
 Delete an application by ID. Prompts for confirmation before deleting.
 
 ```
-$ jobs delete 3
+$ jobtracker delete 3
 Delete Acme Corp — Backend Engineer? [y/N]: y
 Deleted application #3.
 ```
