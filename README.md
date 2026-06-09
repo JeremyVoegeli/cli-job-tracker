@@ -1,6 +1,6 @@
 # CLI Job Tracker
 
-A command-line tool for tracking job applications during a job search. Applications are stored in a local SQLite database — no account, no internet connection required.
+A command-line tool for tracking job applications during a job search. Applications are stored in a local SQLite database — no account, no internet connection required. This project was made with the purpose of experimenting and getting familiar with using Claude Code in development.
 
 ## Tech Stack
 
