@@ -1,2 +1,2 @@
 [console_scripts]
-jobs = jobs.cli:cli
+jobtracker = jobs.cli:cli
